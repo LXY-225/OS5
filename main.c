@@ -265,7 +265,7 @@ void ls_ok(char str[10][20], int deep){
                 if(p_inode->block_point[i] != 0){
                     num = p_inode->block_point[i];      // 是 num号block！！！         真实修改的目录项在block num中！！！修改在buf_block
 
-/*-------------------------------------------  将根目录中对应的block读入到 buf_block中！！！--------------------------------------------*/
+/*-------------------------------------------  将根目录中对应的block读入到 buf_block中--------------------------------------------*/
                     disk_read_block(trans_block_num(num), buf_block);                   
                     disk_read_block(trans_block_num(num)+1, buf_block + half_blk_size);
                     // finish 将对应 block完整读入
@@ -396,7 +396,7 @@ int ls_judge(char str[10][20], int deep){
                 if(p_inode->block_point[i] != 0){
                     num = p_inode->block_point[i];      // 是 num号block！！！         真实修改的目录项在block num中！！！修改在buf_block
 
-/*-------------------------------------------  将根目录中对应的block读入到 buf_block中！！！--------------------------------------------*/
+/*-------------------------------------------  将根目录中对应的block读入到 buf_block中--------------------------------------------*/
                     disk_read_block(trans_block_num(num), buf_block);                   
                     disk_read_block(trans_block_num(num)+1, buf_block + half_blk_size);
                     // finish 将对应 block完整读入
@@ -458,7 +458,6 @@ int ls_judge(char str[10][20], int deep){
                 
                 for(int j = 0; j < 8; j++){
                     if(p_dir[j].valid == 1 && strcmp(p_dir[j].name, str[cur_deep]) == 0){
-                        // printf("%s\n", p_dir[j].name);
                         return 1;
                     }
                 }  
@@ -501,10 +500,6 @@ int judge_need_allo_block(struct inode * p, int * find_index, int * write_num){
                     if(p_dir[j].valid == 0){
                             // 找到了，可以放 要创建文件的 目录项
                         *find_index = j;           // 用于被调函数 直接使用 空闲 目录项j
-                        // printf("在judge函数中，找到了可用的目录项,位置是:\n");
-
-                        // printf("find_index = %d\n", *find_index);
-                        // printf("write_num = %d\n", *write_num);
                         flag = 1;
                         
                         break; 
@@ -534,15 +529,14 @@ void create_folder_ok(char str[10][20], int deep){
 
     disk_read_block(0, buf_super);
     disk_read_block(1, buf_super + half_blk_size);
-    sp_block *p_sp = (sp_block *)buf_super;                  // 已经将超级块读出来！！！！！！！
+    sp_block *p_sp = (sp_block *)buf_super;                  // 已经将超级块读出来..
 
     if(p_sp->free_inode_count == 0){
         printf("没有空闲的inode，创建文件失败\n");
         exit(0);
-    }else if(ls_root_judge("folder", 1) == 1){                      // 看能不能重复在根目录下建立a.c
-        printf("该目录下已有相关文件（夹），创建文件失败\n");
+    }else if(p_sp->free_block_count == 0){
+        printf("没有空闲的block，创建文件失败\n");
         exit(0);
-    
     }else if(re == 1){                      // 不能重复在某个目录下多次建立a.c
         printf("该目录下已有相关文件（夹），创建文件失败\n");
         exit(0);
@@ -582,8 +576,8 @@ void create_folder_ok(char str[10][20], int deep){
         set_inode_block_map(inode_index, block_index, p_sp);   // 如何判断是否真的：完成了置位？为什么一直返回0？
 
         // printf("完成超级块在内存的修改\n");
-        printf("已经内存中超级块修改了 free_inode 和 free_block\n");
-        printf("完成了置位：%d号inode 和 %d号block\n", inode_index, block_index);
+        // printf("已经内存中超级块修改了 free_inode 和 free_block\n");
+        // printf("完成了置位：%d号inode 和 %d号block\n", inode_index, block_index);
 
 
 /*------------------------------------------ 将根目录读出来！！！读到buf_inode中 ------------------------------------------------------------------*/                                                                 
@@ -597,13 +591,13 @@ void create_folder_ok(char str[10][20], int deep){
         struct inode * p_inode = (struct inode *)buf_inode;
         p_inode += 2;       // 来到根目录的inode
 
-        printf("p_inode指向了根目录inode\n");
+        // printf("p_inode指向了根目录inode\n");
         int number_real_hard_inode = 2;  // 要写回的磁盘号
 
 
         /*-------循环开始--------------------------*/
         while(cur_deep < deep){
-            printf("cur_deep = %d\n", cur_deep);
+            // printf("cur_deep = %d\n", cur_deep);
             flag = 0;
             if(p_inode->file_type == dir){ // inode 显示为 目录
 
@@ -623,7 +617,7 @@ void create_folder_ok(char str[10][20], int deep){
 
                             if(strcmp(p_dir[j].name, str[cur_deep]) == 0){        // 找到第一层文件夹       去匹配
                                 // printf("在创建/folder/b.c的过程中:\n");
-                                printf("找到了文件夹对应的inode\n:");
+                                // printf("找到了文件夹对应的inode\n:");
                                 puts(str[cur_deep]);
 
                                 int index = p_dir[j].inode_id;
@@ -641,7 +635,7 @@ void create_folder_ok(char str[10][20], int deep){
                                 p_inode = (struct inode *)buf_inode;
                                 p_inode += index_j;
 
-                                printf("当前p_inode指向 inode号为: %d\n", index);
+                                // printf("当前p_inode指向 inode号为: %d\n", index);
                                 // 真正指向了内存中 文件夹demo的 inode
                                 flag = 1;
                                 // printf("p_inode重新指向新的一层inode的位置\n");
@@ -668,12 +662,12 @@ void create_folder_ok(char str[10][20], int deep){
 
 /// 相当于找文件夹循环出来之后
         if(p_inode->file_type == dir){ // inode 显示为 目录
-            printf("开始建立文件夹了\n");
+            // printf("开始建立文件夹了\n");
             int find_index;
             int write_block_index;
             if(judge_need_allo_block(p_inode, &find_index, &write_block_index) == 1){
                 // 找到合适的一项在 buf_block[find_index], buf_block要写回 block号为write_block_index的磁盘中
-                printf("找到可用目录项：buf_block[%d] , 写回 %d 号磁盘\n", find_index, write_block_index);
+                // printf("找到可用目录项：buf_block[%d] , 写回 %d 号磁盘\n", find_index, write_block_index);
                 struct dir_item * p_dir = (struct dir_item *)buf_block;
 
                 p_dir[find_index].valid = 1;                            // 完成目录项
@@ -686,7 +680,6 @@ void create_folder_ok(char str[10][20], int deep){
 
             }else{
                 // 没有找到空闲block
-                printf("没有空闲block\n");
                 uint32_t new_block_index = find_free_block(p_sp);     // 又找到一个新的block
                 
                 // 即将分配block号为 new_block_index , 修改超级块 ！！！！！！又分配一个block
@@ -702,14 +695,6 @@ void create_folder_ok(char str[10][20], int deep){
                         disk_write_block(number_real_hard_inode, buf_inode);                      // 在目录下新分配一个块，目录也进行了修改，要写回！！
                         disk_write_block(number_real_hard_inode + 1, buf_inode + half_blk_size);
 
-
-                        
-                        // printf("根目录增加了一个块指向\n");
-                        // printf("p_inode->block_point[%d] = %d\n", k, p_inode->block_point[k]);
-                        
-
-
-
                         // 把new_block_index号block块读入内存
                         disk_read_block(trans_block_num(new_block_index), buf_block);
                         disk_read_block(trans_block_num(new_block_index) + 1, buf_block + half_blk_size);
@@ -721,7 +706,6 @@ void create_folder_ok(char str[10][20], int deep){
                         p_dir[0].inode_id = inode_index;
 
                         num = new_block_index;                     /// 要写回的block号
-                        // printf("完成目录项的设置4\n");
                         break;
                     }
                 }
@@ -737,9 +721,6 @@ void create_folder_ok(char str[10][20], int deep){
         // printf("完成目录项的设置，也指向了inode\n");
         flag = 0;
 
-
-/*--------------------------------将要被分配的inode读出来！！！（可能和目录所在inode一样，上面先写入）---------------------------------------*/
-
         char buf_allo_inode[1024];
         disk_read_block(trans_inode_num(inode_i), buf_allo_inode);        // inode在第inode_i号block里
         disk_read_block(trans_inode_num(inode_i) + 1, buf_allo_inode + half_blk_size);
@@ -753,16 +734,7 @@ void create_folder_ok(char str[10][20], int deep){
         p_allo_inode->link = 1;
         // 给文件夹初始化一个block
         p_allo_inode->block_point[0] = block_index;     // inode 表明文件第一个块在block_inode号
-    
-        // printf("在根目录创建文件夹的过程中:\n");
-        // printf("分配给文件夹的inode 号为： %d\n", inode_index);
-        // printf("inode设置如下:\n");
-        // printf("file_type = %d\n", p_allo_inode->file_type);
-
-
-
-        // printf("完成inode的设置，指向block : %d\n", p_allo_inode->block_point[0]);
-        
+            
         disk_write_block(trans_inode_num(inode_i), buf_allo_inode);        // inode在第inode_i号block里
         disk_write_block(trans_inode_num(inode_i) + 1, buf_allo_inode + half_blk_size);
     
@@ -871,11 +843,6 @@ void create_file(char str[10][20]){
                         disk_write_block(2, buf_inode);                      // 在根目录下新分配一个块，根目录也进行了修改，要写回！！
                         disk_write_block(3, buf_inode + half_blk_size);
 
-                        
-                        // printf("根目录增加了一个块指向\n");
-                        // printf("p_inode->block_point[%d] = %d\n", k, p_inode->block_point[k]);
-                        
-
                         // 把new_block_index号block块读入内存
                         disk_read_block(trans_block_num(new_block_index), buf_block);
                         disk_read_block(trans_block_num(new_block_index) + 1, buf_block + half_blk_size);
@@ -902,9 +869,6 @@ void create_file(char str[10][20]){
 
         // printf("完成目录项的设置，也指向了inode\n");
         flag = 0;
-
-
-/*--------------------------------将要被分配的inode读出来！！！（可能和目录所在inode一样，上面先写入）---------------------------------------*/
 
         char buf_allo_inode[1024];
         // char buf_allo_block[1024];
@@ -934,9 +898,6 @@ void create_file(char str[10][20]){
     }
 }
 
-
-
-
 // 任意路径下新建文件 eg. touch /folder/a.c
 void create_file_ok(char str[10][20], int deep){
     int re = ls_judge(str, deep);
@@ -944,7 +905,7 @@ void create_file_ok(char str[10][20], int deep){
 
     disk_read_block(0, buf_super);
     disk_read_block(1, buf_super + half_blk_size);
-    sp_block *p_sp = (sp_block *)buf_super;                  // 已经将超级块读出来！！！！！！！
+    sp_block *p_sp = (sp_block *)buf_super;                  // 已经将超级块读出来
     // printf("完成0号超级块读入 buf_super\n");
 
     if(p_sp->free_inode_count == 0){
@@ -1007,12 +968,7 @@ void create_file_ok(char str[10][20], int deep){
 
         int number_real_hard_inode = 2;   // 要初始化！！！
         
-        // printf("cur_deep = %d, deep = %d\n", cur_deep, deep);
-        
-
         while(cur_deep < deep){
-            // printf("进入循环---------------------------\n");
-            // printf("开始找 str[%d] = %s\n", cur_deep, str[cur_deep]);
 
             flag = 0;
             if(p_inode->file_type == dir){ // inode 显示为 目录
@@ -1024,9 +980,7 @@ void create_file_ok(char str[10][20], int deep){
     /*-------------------------------------------  将根目录中对应的block读入到 buf_block中！！！--------------------------------------------*/
                         disk_read_block(trans_block_num(num), buf_block);                   
                         disk_read_block(trans_block_num(num)+1, buf_block + half_blk_size);
-                        // printf("将 %d 号 block 读入buf_block\n",num);
-                        // finish 将对应 block完整读入
-
+                    
                         // 读入的是目录     遍历目录找到一个空闲位置，看看有没有
                         struct dir_item * p_dir = (struct dir_item *)buf_block;
                         for(int j = 0; j < 8; j++){
@@ -1037,9 +991,7 @@ void create_file_ok(char str[10][20], int deep){
                                 int index = p_dir[j].inode_id;
                                 int index_i = index / 32;
                                 int index_j = index % 32;
-                                // printf("index_i = %d\n", index_i);
-                                // printf("index_j = %d\n", index_j);
-
+                              
                                 disk_read_block(trans_inode_num(index_i), buf_inode);
                                 disk_read_block(trans_inode_num(index_i) + 1, buf_inode + half_blk_size);
 
@@ -1076,14 +1028,11 @@ void create_file_ok(char str[10][20], int deep){
         }
 
 
-
-
 // 最终文件夹所在inode       已经读入buf_inode，且p_inode已经指向对于对应的inode
     
 
 /// 相当于找文件夹循环出来之后
         if(p_inode->file_type == dir){ // inode 显示为 目录
-            // printf("开始在正确的文件夹位置：创建文件了！！！\n");
             int find_index;
             int write_block_index;
             if(judge_need_allo_block(p_inode, &find_index, &write_block_index) == 1){
@@ -1106,7 +1055,6 @@ void create_file_ok(char str[10][20], int deep){
 
             }else{
                 // 没有找到空闲block
-                // printf("没有空闲的目录项，要新建目录block\n");
                 uint32_t new_block_index = find_free_block(p_sp);     // 又找到一个新的block
                 
                 // 即将分配block号为 new_block_index , 修改超级块 ！！！！！！
@@ -1123,9 +1071,6 @@ void create_file_ok(char str[10][20], int deep){
                         disk_write_block(number_real_hard_inode, buf_inode);                      // 在根目录下新分配一个块，根目录也进行了修改，要写回！！
                         disk_write_block(number_real_hard_inode + 1, buf_inode + half_blk_size);
                         
-                        // printf("根目录增加了一个块指向\n");
-                        // printf("p_inode->block_point[%d] = %d\n", k, p_inode->block_point[k]);
-                        
 
                         // 把new_block_index号block块读入内存
                         disk_read_block(trans_block_num(new_block_index), buf_block);
@@ -1134,16 +1079,13 @@ void create_file_ok(char str[10][20], int deep){
                         struct dir_item * p_dir = (struct dir_item *)buf_block;
                         p_dir[0].valid = 1;
 
-                        // printf("即将要命名了：str[%d] = %s\n", cur_deep, str[cur_deep]);
-
-                        // printf("cur_deep = %d\n", cur_deep);
                         memcpy(p_dir[0].name, str[cur_deep], strlen(str[cur_deep]));
 
                         p_dir[0].type = file_;
                         p_dir[0].inode_id = inode_index;
 
                         num = new_block_index;                     /// 要写回的block号
-                        // printf("完成目录项的设置4\n");
+
                         break;
                     }
                 }
@@ -1159,8 +1101,6 @@ void create_file_ok(char str[10][20], int deep){
         // printf("完成目录项的设置，也指向了inode\n");
         flag = 0;
 
-
-/*--------------------------------将要被分配的inode读出来！！！（可能和目录所在inode一样，上面先写入）---------------------------------------*/
 
         char buf_allo_inode[1024];
         disk_read_block(trans_inode_num(inode_i), buf_allo_inode);        // inode在第inode_i号block里
@@ -1202,7 +1142,7 @@ uint32_t get_inode_information(char str[10][20], int deep){
 
     struct inode * p_inode = (struct inode *)buf_inode_src;
     p_inode += 2;       // 来到根目录的inode
-    // printf("p_inode指向 根目录对应的inode\n");
+
     struct dir_item * p_dir;
     int flag = 0;
     uint32_t num;
@@ -1225,8 +1165,6 @@ uint32_t get_inode_information(char str[10][20], int deep){
                     for(int j = 0; j < 8; j++){
 
                         if(strcmp(p_dir[j].name, str[cur_deep]) == 0){        // 找到第一层文件夹       去匹配
-                            // printf("在创建/folder/b.c的过程中:\n");
-                            // printf("找到了folder文件夹对应的inode\n");
 
                             int index = p_dir[j].inode_id;
                             int index_i = index / 32;
@@ -1271,10 +1209,10 @@ uint32_t get_inode_information(char str[10][20], int deep){
 
     uint32_t inode_src_num;
     if(p_inode->file_type == dir){ // inode 显示为 目录，一会读出的block就是一堆目录项
-        // printf("开始在正确的文件夹位置：找源文件了！！！\n");
+
         for(int i = 0; i < 6; i++){               // 该文件对应的第i个block
             if(p_inode->block_point[i] != 0){
-                // printf("进入了根目录的第 %d 个 block\n", i);
+
                 uint32_t num = p_inode->block_point[i];      // 是 num号block
 
                 disk_read_block(trans_block_num(num), buf_block_src);                         // 将 block读出
@@ -1349,7 +1287,6 @@ void cp(char str1[10][20], char str2[10][20], int deep1, int deep2){
 
         disk_read_block(2, buf_inode);
         disk_read_block(3, buf_inode + half_blk_size);
-        // printf("把 前32个 inode 读到 buf_inode中\n");
 
         struct inode * p_inode = (struct inode *)buf_inode;
         p_inode += 2;       // 来到根目录的inode
@@ -1376,8 +1313,6 @@ void cp(char str1[10][20], char str2[10][20], int deep1, int deep2){
                         for(int j = 0; j < 8; j++){
 
                             if(strcmp(p_dir[j].name, str2[cur_deep2]) == 0){        // 找到第一层文件夹       去匹配
-                                // printf("在创建/folder/b.c的过程中:\n");
-                                // printf("找到了folder文件夹对应的inode\n");
 
                                 int index = p_dir[j].inode_id;
                                 int index_i = index / 32;
@@ -1421,13 +1356,8 @@ void cp(char str1[10][20], char str2[10][20], int deep1, int deep2){
 /// 找文件夹循环出来之后    
         uint32_t src_inode = get_inode_information(str1, deep1);
         
-        // if(src_inode == 0){
-        //     printf("源文件不存在\n");
-        //     exit(0);
-        // }
-
         if(p_inode->file_type == dir){ // inode 显示为 目录
-            // printf("开始在正确的文件夹位置：复制 文件了 只是设个目录项而已！！！\n");
+
             int find_index;
             int write_block_index;
             if(judge_need_allo_block(p_inode, &find_index, &write_block_index) == 1){
@@ -1443,7 +1373,6 @@ void cp(char str1[10][20], char str2[10][20], int deep1, int deep2){
                 p_dir[find_index].inode_id = src_inode;
 
                 num = write_block_index;                           /// 要写回的block号
-                // printf("完成目录项的设置3\n");
 
             }else{
                 // 没有找到空闲block
@@ -1478,7 +1407,7 @@ void cp(char str1[10][20], char str2[10][20], int deep1, int deep2){
                         p_dir[0].inode_id = src_inode;
 
                         num = new_block_index;                     /// 要写回的block号
-                        // printf("完成目录项的设置4\n");
+
                         break;
                     }
                 }
@@ -1519,7 +1448,7 @@ void ls_root(){
 
         for(int i = 0; i < 6; i++){               // 该文件对应的第i个block
             if(p_inode->block_point[i] != 0){
-                // printf("进入了根目录的第 %d 个 block\n", i);
+
                 uint32_t num = p_inode->block_point[i];      // 是 num号block
 
                 disk_read_block(trans_block_num(num), buf_block);                         // 将 block读出
